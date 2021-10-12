@@ -1,142 +1,153 @@
 <!DOCTYPE html>
 <html>
-
-<head>
-    <meta charset="utf-8">
+  <head>
+    <meta charset="utf-8" />
     <title>Data Visualisation</title>
-    <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-    <link href="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.css" rel="stylesheet">
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <link
+      href="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.css"
+      rel="stylesheet"
+    />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.2.0/mapbox-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+    <script
+      src="https://code.jquery.com/jquery-3.6.0.js"
+      integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk="
+      crossorigin="anonymous"
+    ></script>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
+      body {
+        margin: 0;
+        padding: 0;
+      }
 
-        #map {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 100%;
-        }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
     </style>
-</head>
+  </head>
 
-<body>
+  <body>
     <style>
-        .mapboxgl-popup {
-            max-width: 800px;
-            font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
-        }
+      .mapboxgl-popup {
+        max-width: 800px;
+        font: 12px/20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+      }
     </style>
     <div id="map"></div>
     <script>
-        mapboxgl.accessToken = 'pk.eyJ1IjoiYW5iZSIsImEiOiJjanZxbW5ld24wOTR6NDhyeDg2OWU3OXU0In0.ZZaH0FceW9kL__BSBdw0-w';
-        var map = new mapboxgl.Map({
-            container: 'map',
-            style: 'mapbox://styles/mapbox/streets-v11',
-            center: [0, 0],
-            zoom: 5,
-            hash: true
+      mapboxgl.accessToken =
+        "<token_here>";
+      var map = new mapboxgl.Map({
+        container: "map",
+        style: "mapbox://styles/mapbox/streets-v11",
+        center: [0, 0],
+        zoom: 5,
+        hash: true,
+      });
+
+      map.addControl(new mapboxgl.NavigationControl());
+
+      map.on("load", function () {
+        map.addSource("places", { type: "geojson", data: "data.json" });
+        // Add a layer showing the places.
+        map.addLayer({
+          id: "places",
+          type: "circle",
+          source: "places",
+          paint: {
+            "circle-radius": 6,
+            "circle-color": "#B42222",
+          },
         });
 
-        map.addControl(new mapboxgl.NavigationControl());
+        // When a click event occurs on a feature in the places layer, open a popup at the
+        // location of the feature, with description HTML from its properties.
+        map.on("click", "places", function (e) {
+          var coordinates = e.features[0].geometry.coordinates.slice();
+          var description =
+            "PtNumber: " +
+            e.features[0].properties.PtNumber +
+            '<br><canvas id="myChart" width="800" height="600"></canvas>';
+          var PtNumber = e.features[0].properties.PtNumber;
+          // Ensure that if the map is zoomed out such that multiple
+          // copies of the feature are visible, the popup appears
+          // over the copy being pointed to.
+          while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+            coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+          }
 
-        map.on('load', function () {
-            map.addSource('places', { type: 'geojson', data: 'data.json' });
-            // Add a layer showing the places.
-            map.addLayer({
-                'id': 'places',
-                'type': 'circle',
-                'source': 'places',
-                'paint': {
-                    'circle-radius': 6,
-                    'circle-color': '#B42222'
-                },
-            });
+          new mapboxgl.Popup()
+            .setLngLat(coordinates)
+            .setHTML(description)
+            .addTo(map);
 
+          $.ajax({
+            type: "GET",
+            url: "timeseriesData.csv",
+            dataType: "text",
+            success: function (data) {
+              var allTextLines = data.split(/\r\n|\n/);
+              var headers = allTextLines[0].split(",");
+              var lines = [];
 
-            // When a click event occurs on a feature in the places layer, open a popup at the
-            // location of the feature, with description HTML from its properties.
-            map.on('click', 'places', function (e) {
-                var coordinates = e.features[0].geometry.coordinates.slice();
-                var description = "PtNumber: " + e.features[0].properties.PtNumber + '<br><canvas id="myChart" width="800" height="600"></canvas>';
-var PtNumber = e.features[0].properties.PtNumber;
-                // Ensure that if the map is zoomed out such that multiple
-                // copies of the feature are visible, the popup appears
-                // over the copy being pointed to.
-                while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-                    coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+              for (var i = 1; i < allTextLines.length; i++) {
+                var data = allTextLines[i].split(",");
+                if (data.length == headers.length) {
+                  var tarr = [];
+                  for (var j = 0; j < headers.length; j++) {
+                    tarr.push(headers[j] + ":" + data[j]);
+                  }
+                  lines.push(tarr);
                 }
+              }
+              console.log(lines);
 
-                new mapboxgl.Popup()
-                    .setLngLat(coordinates)
-                    .setHTML(description)
-                    .addTo(map);
+              var ctx = document.getElementById("myChart").getContext("2d");
+              var chart = new Chart(ctx, {
+                // The type of chart we want to create
+                type: "bubble",
 
-                $.ajax({
-                    type: "GET",
-                    url: "timeseriesData.csv",
-                    dataType: "text",
-                    success: function (data) {
-                        var allTextLines = data.split(/\r\n|\n/);
-                        var headers = allTextLines[0].split(',');
-                        var lines = [];
+                // The data for our dataset
+                data: {
+                  datasets: [
+                    {
+                      label: "Data " + PtNumber,
+                      backgroundColor: "rgb(0,178,238)",
+                      borderColor: "rgb(0,178,238)",
+                      data: [
+                        { x: 0, y: 19.983 },
+                        { x: 1, y: 21.315 },
+                      ],
+                    },
+                  ],
+                },
 
-                        for (var i = 1; i < allTextLines.length; i++) {
-                            var data = allTextLines[i].split(',');
-                            if (data.length == headers.length) {
-
-                                var tarr = [];
-                                for (var j = 0; j < headers.length; j++) {
-                                    tarr.push(headers[j] + ":" + data[j]);
-                                }
-                                lines.push(tarr);
-                            }
-                        }
-                        console.log(lines);
-
-
-
-                        var ctx = document.getElementById('myChart').getContext('2d');
-                        var chart = new Chart(ctx, {
-                            // The type of chart we want to create
-                            type: 'bubble',
-
-                            // The data for our dataset
-                            data: {
-                                datasets: [{
-                                    label: 'Data ' + PtNumber,
-                                    backgroundColor: 'rgb(0,178,238)',
-                                    borderColor: 'rgb(0,178,238)',
-                                    data: [{ x: 0, y: 19.983 }, { x: 1, y: 21.315 }]
-                                }]
-                            },
-
-                            // Configuration options go here
-                            options: {
-                                showLine: false
-                            }
-                        })
-                    }
-                });
-            });
-
-            // Change the cursor to a pointer when the mouse is over the places layer.
-            map.on('mouseenter', 'places', function () {
-                map.getCanvas().style.cursor = 'pointer';
-            });
-
-            // Change it back to a pointer when it leaves.
-            map.on('mouseleave', 'places', function () {
-                map.getCanvas().style.cursor = '';
-            });
-
+                // Configuration options go here
+                options: {
+                  showLine: false,
+                },
+              });
+            },
+          });
         });
+
+        // Change the cursor to a pointer when the mouse is over the places layer.
+        map.on("mouseenter", "places", function () {
+          map.getCanvas().style.cursor = "pointer";
+        });
+
+        // Change it back to a pointer when it leaves.
+        map.on("mouseleave", "places", function () {
+          map.getCanvas().style.cursor = "";
+        });
+      });
     </script>
-
-</body>
-
+  </body>
 </html>
