@@ -1,1 +1,3 @@
-# map_data_visualisation
+# Data Visualisation
+
+Versuch zur Darstellung von Messdaten der Hangbewegungen im Wallis.
