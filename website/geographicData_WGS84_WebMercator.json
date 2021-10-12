@@ -1,9 +1,0 @@
-{
-"type": "FeatureCollection",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::3857" } },
-"features": [
-{ "type": "Feature", "properties": { "PtNumber": 14817613.0, "easting": 632986.26, "northing": 115974.971, "def_mm": -7.4394085404375057 }, "geometry": { "type": "Point", "coordinates": [ 875632.120069372933358, 5811561.679097732529044 ] } },
-{ "type": "Feature", "properties": { "PtNumber": 14863075.0, "easting": 630916.258, "northing": 116132.219, "def_mm": -2.6488959931412031 }, "geometry": { "type": "Point", "coordinates": [ 872648.404791355715133, 5811804.934792154468596 ] } },
-{ "type": "Feature", "properties": { "PtNumber": 15045890.0, "easting": 632093.786, "northing": 115232.26, "def_mm": -28.714664925992263 }, "geometry": { "type": "Point", "coordinates": [ 874339.538913801196031, 5810494.249466745182872 ] } }
-]
-}
